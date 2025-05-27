@@ -35,8 +35,36 @@ function FlashCard({ front, back }) {
   );
 }
 
+function shuffle(array) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export default function App() {
   const [selectedSubject, setSelectedSubject] = useState("NT");
+  const [mode, setMode] = useState("all"); // "all" 或 "single"
+  const [shuffledCards, setShuffledCards] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const cards = flashCards[selectedSubject] || [];
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    if (newMode === "single") {
+      const shuffled = shuffle(cards);
+      setShuffledCards(shuffled);
+      setCurrentIndex(0);
+    }
+  };
+
+  const handleSubjectChange = (subject) => {
+    setSelectedSubject(subject);
+    setMode("all");
+  };
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -45,7 +73,7 @@ export default function App() {
         {subjects.map((subject) => (
           <div
             key={subject}
-            onClick={() => setSelectedSubject(subject)}
+            onClick={() => handleSubjectChange(subject)}
             className={`cursor-pointer p-2 rounded mb-2 ${
               selectedSubject === subject ? "bg-blue-500 text-white" : "hover:bg-gray-200"
             }`}
@@ -53,14 +81,63 @@ export default function App() {
             {subject}
           </div>
         ))}
+
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold mb-2">显示模式</h3>
+          <button
+            className={`w-full text-left p-2 rounded mb-2 ${mode === "all" ? "bg-green-500 text-white" : "hover:bg-gray-200"}`}
+            onClick={() => handleModeChange("all")}
+          >
+            查看全部
+          </button>
+          <button
+            className={`w-full text-left p-2 rounded ${mode === "single" ? "bg-green-500 text-white" : "hover:bg-gray-200"}`}
+            onClick={() => handleModeChange("single")}
+          >
+            随机浏览
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 p-6 flex flex-wrap justify-start items-start">
-        {(flashCards[selectedSubject] || []).map((card, index) => (
-          <FlashCard key={index} front={card.front} back={card.back} />
-        ))}
-        {(!flashCards[selectedSubject] || flashCards[selectedSubject].length === 0) && (
-          <div className="text-gray-400">该科目暂无卡片内容。</div>
+      <div className="flex-1 p-6 flex flex-col items-center">
+        {mode === "all" ? (
+          <div className="flex flex-wrap justify-start items-start">
+            {cards.map((card, index) => (
+              <FlashCard key={index} front={card.front} back={card.back} />
+            ))}
+            {cards.length === 0 && <div className="text-gray-400">该科目暂无卡片内容。</div>}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            {shuffledCards.length > 0 ? (
+              <>
+                <FlashCard
+                  front={shuffledCards[currentIndex].front}
+                  back={shuffledCards[currentIndex].back}
+                />
+                <div className="mt-4 space-x-4">
+                  <button
+                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                    onClick={() =>
+                      setCurrentIndex((prev) => (prev - 1 + shuffledCards.length) % shuffledCards.length)
+                    }
+                  >
+                    ← 上一张
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                    onClick={() =>
+                      setCurrentIndex((prev) => (prev + 1) % shuffledCards.length)
+                    }
+                  >
+                    下一张 →
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400">该科目暂无卡片内容。</div>
+            )}
+          </div>
         )}
       </div>
     </div>
