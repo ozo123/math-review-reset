@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 
-const subjects = ['NT', 'GT', 'NA', 'MB', 'AP', 'POS']
+const subjects = ['NT', 'GT', 'NA', 'MB', 'AP', 'POS'];
 
-// 初始示例卡片数据，后续可替换或导入
 const flashCards = {
   NT: [
     { front: 'Definition 1.4: Prime Number', back: 'An integer n > 1 is a prime number if its only positive divisors are 1 and itself.', subject: 'NT', mistake: false },
@@ -13,13 +12,13 @@ const flashCards = {
   MB: [],
   AP: [],
   POS: []
-}
+};
 
 function FlashCard({ front, back, subject, mistake, onToggleMistake, large = false }) {
-  const [flipped, setFlipped] = useState(false)
-  const sizeClass = large ? 'w-2/3 h-[60vh]' : 'w-64 h-48'
+  const [flipped, setFlipped] = useState(false);
+  const sizeClass = large ? 'w-2/3 h-[60vh]' : 'w-64 h-48';
   return (
-    <div className={`${sizeClass} m-4 p-4 bg-white border rounded-xl shadow relative`}>
+    <div className={`${sizeClass} m-4 p-4 bg-white border rounded-xl shadow relative card-flip`}>
       <div onClick={() => setFlipped(!flipped)} className="w-full h-full cursor-pointer">
         <div className={`w-full h-full transition-transform duration-500 transform ${flipped ? 'rotate-y-180' : ''}`}>
           <div className={`absolute w-full h-full backface-hidden ${flipped ? 'hidden' : 'block'}`}>
@@ -37,96 +36,100 @@ function FlashCard({ front, back, subject, mistake, onToggleMistake, large = fal
       <div className="absolute bottom-2 left-2 text-xs text-gray-400">科目：{subject}</div>
       <button
         onClick={onToggleMistake}
-        className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded ${mistake ? 'bg-red-400 text-white' : 'bg-gray-200 text-black'}`}
-      >
+        className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded ${mistake ? 'bg-red-400 text-white' : 'bg-gray-200 text-black'}`}>
         {mistake ? '取消易错' : '标为易错'}
       </button>
     </div>
-  )
+  );
 }
 
 function shuffle(array) {
-  const arr = [...array]
+  const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return arr
+  return arr;
 }
 
 export default function App() {
-  const [selectedSubject, setSelectedSubject] = useState('NT')
-  const [mode, setMode] = useState('all')
-  const [shuffledCards, setShuffledCards] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [data, setData] = useState(flashCards)
-  const [onlyMistake, setOnlyMistake] = useState(false)
+  const [selectedSubject, setSelectedSubject] = useState('NT');
+  const [mode, setMode] = useState('all');
+  const [shuffledCards, setShuffledCards] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [data, setData] = useState(flashCards);
+  const [onlyMistake, setOnlyMistake] = useState(false);
 
-  const cards = data[selectedSubject] || []
+  const cards = data[selectedSubject] || [];
   const filtered = cards.filter(card =>
     (card.front.toLowerCase().includes(searchTerm.toLowerCase()) ||
       card.back.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (!onlyMistake || card.mistake)
-  )
+  );
 
-  // 进入随机模式时生成乱序列表
+  // 当切换到随机模式或过滤变化时，重新洗牌
   useEffect(() => {
     if (mode === 'single') {
-      setShuffledCards(shuffle(filtered))
-      setCurrentIndex(0)
+      setShuffledCards(shuffle(filtered));
+      setCurrentIndex(0);
     }
-  }, [mode, filtered])
+  }, [mode, filtered]);
 
-  // 快捷键支持：← → 切换，空格翻转
+  // 快捷键支持：←, →, 空格
   useEffect(() => {
-    const onKey = e => {
-      if (mode !== 'single' || !shuffledCards.length) return
-      if (e.key === 'ArrowRight') setCurrentIndex(i => (i + 1) % shuffledCards.length)
-      if (e.key === 'ArrowLeft') setCurrentIndex(i => (i - 1 + shuffledCards.length) % shuffledCards.length)
-      if (e.key === ' ') {
-        e.preventDefault()
-        const cardDiv = document.querySelector('.card-flip > div')
-        if (cardDiv) cardDiv.click()
+    const onKeyDown = e => {
+      if (mode !== 'single' || shuffledCards.length === 0) return;
+      if (e.key === 'ArrowRight') {
+        setCurrentIndex(i => (i + 1) % shuffledCards.length);
+      } else if (e.key === 'ArrowLeft') {
+        setCurrentIndex(i => (i - 1 + shuffledCards.length) % shuffledCards.length);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        const flipContainer = document.querySelector('.card-flip div');
+        if (flipContainer) flipContainer.click();
       }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [mode, shuffledCards])
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mode, shuffledCards]);
 
-  // 标记或取消易错
-  const toggleMistake = i => {
-    const newData = { ...data }
-    newData[selectedSubject][i].mistake = !newData[selectedSubject][i].mistake
-    setData(newData)
-  }
+  // 标记易错
+  const toggleMistake = index => {
+    const newData = { ...data };
+    newData[selectedSubject][index].mistake = !newData[selectedSubject][index].mistake;
+    setData(newData);
+  };
 
   return (
-    <div className="flex min-h-screen">
-      {/* 侧边栏：科目、模式切换、搜索 */}
+    <div className="flex min-h-screen bg-white">
+      {/* 侧边栏 */}
       <aside className="w-1/6 bg-gray-100 p-4 border-r">
         <h2 className="text-lg font-bold mb-4">科目分类</h2>
-        {subjects.map(s => (
+        {subjects.map(subject => (
           <div
-            key={s}
-            onClick={() => { setSelectedSubject(s); setMode('all'); setSearchTerm('') }}
-            className={`cursor-pointer p-2 rounded mb-2 ${selectedSubject === s ? 'bg-blue-500 text-white' : 'hover:bg-gray-200'}`}
-          >
-            {s}
+            key={subject}
+            onClick={() => {
+              setSelectedSubject(subject);
+              setMode('all');
+              setSearchTerm('');
+            }}
+            className={`cursor-pointer p-2 rounded mb-2 ${
+              selectedSubject === subject ? 'bg-blue-500 text-white' : 'hover:bg-gray-200'
+            }`}>
+            {subject}
           </div>
         ))}
         <div className="mt-6">
           <h3 className="font-semibold mb-2">显示模式</h3>
           <button
             onClick={() => setMode('all')}
-            className={`w-full text-left p-2 mb-2 rounded ${mode === 'all' ? 'bg-green-500 text-white' : 'hover:bg-gray-200'}`}
-          >
+            className={`w-full text-left p-2 mb-2 rounded ${mode === 'all' ? 'bg-green-500 text-white' : 'hover:bg-gray-200'}`}>
             查看全部
           </button>
           <button
             onClick={() => setMode('single')}
-            className={`w-full text-left p-2 rounded ${mode === 'single' ? 'bg-green-500 text-white' : 'hover:bg-gray-200'}`}
-          >
+            className={`w-full text-left p-2 rounded ${mode === 'single' ? 'bg-green-500 text-white' : 'hover:bg-gray-200'}`}>
             随机浏览
           </button>
           <label className="mt-2 inline-flex items-center text-sm">
@@ -150,37 +153,53 @@ export default function App() {
           />
         </div>
       </aside>
-
-      {/* 主内容区：Flash Card 列表 or 随机浏览 */}
+      {/* 主要内容 */}
       <main className="flex-1 p-6 flex flex-col items-center">
         {mode === 'all' ? (
-          <div className="flex flex-wrap">
-            {filtered.map((c, i) => (
+          <div className="flex flex-wrap justify-start">
+            {filtered.map((card, idx) => (
               <FlashCard
-                key={i}
-                front={c.front}
-                back={c.back}
-                subject={c.subject}
-                mistake={c.mistake}
-                onToggleMistake={() => toggleMistake(i)}
+                key={idx}
+                front={card.front}
+                back={card.back}
+                subject={card.subject}
+                mistake={card.mistake}
+                onToggleMistake={() => toggleMistake(idx)}
               />
             ))}
-            {!filtered.length && <div className="text-gray-400">暂无可显示卡片。</div>}
+            {filtered.length === 0 && <div className="text-gray-400">暂无可显示卡片。</div>}
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            {shuffledCards.length ? (
+            {shuffledCards.length > 0 ? (
               <>
-                <div className="card-flip">
-                  <FlashCard
-                    front={shuffledCards[currentIndex].front}
-                    back={shuffledCards[currentIndex].back}
-                    subject={shuffledCards[currentIndex].subject}
-                    mistake={shuffledCards[currentIndex].mistake}
-                    onToggleMistake={() => toggleMistake(currentIndex)}
-                    large
-                  />
-                </div>
+                <FlashCard
+                  front={shuffledCards[currentIndex].front}
+                  back={shuffledCards[currentIndex].back}
+                  subject={shuffledCards[currentIndex].subject}
+                  mistake={shuffledCards[currentIndex].mistake}
+                  onToggleMistake={() => toggleMistake(currentIndex)}
+                  large
+                />
                 <div className="mt-4 space-x-4">
                   <button
-                    onClick={() => setCurrentIndex(i => (i - 1 + shuffledCards.length) % shuffledCards.lengt
+                    onClick={() => setCurrentIndex(i => (i - 1 + shuffledCards.length) % shuffledCards.length)}
+                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    ← 上一张
+                  </button>
+                  <button
+                    onClick={() => setCurrentIndex(i => (i + 1) % shuffledCards.length)}
+                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    下一张 →
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-gray-400">暂无可显示卡片。</div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
